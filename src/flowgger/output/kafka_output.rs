@@ -6,20 +6,18 @@ use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use rdkafka::ClientConfig;
-use std::collections::BTreeMap;
-use toml::Value;
 
 const KAFKA_DEFAULT_THREADS: u32 = 1;
 
 pub struct KafkaOutput {
     config: KafkaConfig,
+    producer: FutureProducer,
     threads: u32,
 }
 
 #[derive(Clone)]
 struct KafkaConfig {
     topic: String,
-    librdkafka: BTreeMap<String, Value>,
 }
 
 struct KafkaWorker {
@@ -29,20 +27,8 @@ struct KafkaWorker {
 }
 
 impl KafkaWorker {
-    fn new(arx: Arc<Mutex<Receiver<Vec<u8>>>>, config: KafkaConfig) -> KafkaWorker {
-        let mut client_config = ClientConfig::new();
-        for (k, v) in config.librdkafka.iter() {
-            client_config.set(k, v.as_str().expect("All output.librdkafka settings MUST be strings even numbers"));
-        }
-        let producer: FutureProducer = client_config
-            .create()
-            .expect("Producer creation error");
-
-        KafkaWorker {
-            arx: arx,
-            producer: producer,
-            config: config,
-        }
+    fn new(arx: Arc<Mutex<Receiver<Vec<u8>>>>, config: KafkaConfig, producer: FutureProducer) -> KafkaWorker {
+        KafkaWorker { arx, producer, config }
     }
 
     fn run(&mut self) {
@@ -72,10 +58,14 @@ impl KafkaOutput {
                 x.as_integer()
                     .expect("output.kafka_threads must be a 32-bit integer") as u32
             });
-        KafkaOutput {
-            config: KafkaConfig { topic, librdkafka: librdconfig },
-            threads,
+        let mut client_config = ClientConfig::new();
+        for (k, v) in librdconfig.iter() {
+            client_config.set(k, v.as_str().expect("All output.librdkafka settings MUST be strings even numbers"));
         }
+        let producer: FutureProducer = client_config
+            .create()
+            .expect("Producer creation error");
+        KafkaOutput { config: KafkaConfig { topic }, threads, producer }
     }
 }
 
@@ -87,8 +77,9 @@ impl Output for KafkaOutput {
         for id in 0..self.threads {
             let tarx = Arc::clone(&arx);
             let tconfig = self.config.clone();
+            let tproducer = self.producer.clone();
             thread::Builder::new().name(format!("kafka-output-{}", id)).spawn(move || {
-                let mut worker = KafkaWorker::new(tarx, tconfig);
+                let mut worker = KafkaWorker::new(tarx, tconfig, tproducer);
                 worker.run();
             }).unwrap();
         }
