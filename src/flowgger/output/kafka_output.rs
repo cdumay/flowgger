@@ -53,10 +53,10 @@ impl KafkaOutput {
             .as_table().expect("output.librdkafka must be set")
             .to_owned();
         let threads = config
-            .lookup("output.kafka_threads")
+            .lookup("output.threads")
             .map_or(KAFKA_DEFAULT_THREADS, |x| {
                 x.as_integer()
-                    .expect("output.kafka_threads must be a 32-bit integer") as u32
+                    .expect("output.threads must be a 32-bit integer") as u32
             });
         let mut client_config = ClientConfig::new();
         for (k, v) in librdconfig.iter() {

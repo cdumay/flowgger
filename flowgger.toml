@@ -19,6 +19,7 @@ tcp_threads = 2
 ### Kafka output
 type = "kafka"
 topic = "alpha.log1"
+threads = 5
 
 ### Output format and parameters
 ### JSON (GELF)
