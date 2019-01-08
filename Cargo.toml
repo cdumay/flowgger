@@ -3,8 +3,8 @@ cargo-features = ["edition"]
 [package]
 edition = "2018"
 name = "flowgger"
-version = "0.2.8"
-authors = ["Frank Denis <github@pureftpd.org>"]
+version = "0.3.0"
+authors = ["Frank Denis <github@pureftpd.org>", "Cedric Dumay <cedric.dumay@gmail.com>"]
 build = "build.rs"
 
 [features]
@@ -37,8 +37,8 @@ git = "https://github.com/zonyitoo/coio-rs"
 optional = true
 
 [dependencies.rdkafka]
-version = "0.17"
-features = ["ssl", "sasl"]
+git = "https://github.com/fede1024/rust-rdkafka"
+features = ["ssl", "sasl", "dynamic_linking"]
 optional = true
 
 [dependencies.openssl]
