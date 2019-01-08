@@ -1,4 +1,3 @@
-#![feature(duration_as_u128)]
 extern crate capnp;
 extern crate chrono;
 extern crate clap;

@@ -7,7 +7,7 @@ use crate::flowgger::encoder::Encoder;
 use crate::flowgger::splitter::{
     CapnpSplitter, LineSplitter, NulSplitter, Splitter, SyslenSplitter,
 };
-use std::io::{stderr, BufReader, Write};
+use std::io::BufReader;
 use std::net::SocketAddr;
 use std::sync::mpsc::SyncSender;
 
