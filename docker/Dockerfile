@@ -1,62 +1,101 @@
-FROM jedisct1/base-dev-rust-nightly:94e884b63
-MAINTAINER Frank Denis
-ENV SERIAL 1
+FROM debian:stretch-slim
+MAINTAINER Cedric Dumay
 
-ENV DEBIAN_FRONTEND noninteractive
+################################################################################
+## Image / System variables
+ENV SERIAL=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PATH=/usr/local/cargo/bin:$PATH
 
+################################################################################
+## OS install
 ENV BUILD_DEPS \
     autoconf \
     automake \
-    libtool \
+    ca-certificates \
+    curl \
     file \
-    gcc \
     g++ \
+    gcc \
+    gcc \
     git \
     libc-dev \
+    libc6-dev \
+    liblzma-dev \
+    libsasl2-dev \
+    libsnappy-dev \
+    libssl-dev \
+    libtool \
     make \
-    pkg-config
+    patch \
+    pkg-config \
+    zlib1g-dev
 
-RUN set -x && \
-    apt-get install -y \
-        $BUILD_DEPS \
-        libsnappy-dev \
-        --no-install-recommends && \
-    apt-get clean && \
-    rm -fr /tmp/* /var/tmp/*
+RUN set -eux; \
+    apt-get update -qq; \
+    apt-get install -qq ${BUILD_DEPS} --no-install-recommends
 
-ENV LIBRESSL_VERSION 2.7.0
-ENV LIBRESSL_SHA256 50ce6d6f88dea73a3efca62b0a9e6ca75292bdee6c9293efd6a771cfdb28cdee
-ENV LIBRESSL_DOWNLOAD_URL https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-${LIBRESSL_VERSION}.tar.gz
+################################################################################
+## RUST install
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo
 
-RUN set -x && \
-    mkdir -p /tmp/src && \
-    cd /tmp/src && \
-    curl -sSL $LIBRESSL_DOWNLOAD_URL -o libressl.tar.gz && \
-    echo "${LIBRESSL_SHA256} *libressl.tar.gz" | sha256sum -c - && \
-    tar xzf libressl.tar.gz && \
-    rm -f libressl.tar.gz && \
-    cd libressl-${LIBRESSL_VERSION} && \
-    ./configure --disable-shared --with-pic --disable-dependency-tracking --prefix=/opt/libressl && \
-    make check && make install && \
-    rm -fr /opt/libressl/share/man && \
-    echo /opt/libressl/lib > /etc/ld.so.conf.d/libressl.conf && ldconfig && \
-    rm -fr /tmp/*
+RUN mkdir -p "${RUSTUP_HOME}" "${CARGO_HOME}" && \
+    curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path --default-toolchain nightly && \
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME && \
+    rustup --version && \
+    cargo --version && \
+    rustc --version
 
-ENV OPENSSL_LIB_DIR=/opt/libressl/lib
-ENV OPENSSL_INCLUDE_DIR=/opt/libressl/include
-
+################################################################################
+## LZ4 static & fPIC
+ENV LZ4_VERSION=1.8.3
 RUN set -x && \
     cd /tmp && \
-    git clone https://github.com/cdumay/flowgger.git && \
+    curl -sSL "https://github.com/lz4/lz4/archive/v${LZ4_VERSION}.tar.gz" | tar xz && \
+    cd lz4-${LZ4_VERSION}/lib && \
+    CFLAGS="-O3 -fPIC" make && \
+    make install
+
+################################################################################
+## ZSTD static & fPIC
+ENV ZSTD_VERSION=1.3.7
+RUN set -x && \
+    cd /tmp && \
+    curl -sSL "https://github.com/facebook/zstd/archive/v${ZSTD_VERSION}.tar.gz" | tar xz && \
+    cd zstd-${ZSTD_VERSION}/lib && \
+    CFLAGS="-O3 -fPIC" make && \
+    make install
+
+################################################################################
+## librdKafka
+RUN set -x && \
+    cd /tmp && \
+    git clone https://github.com/edenhill/librdkafka
+
+RUN cd /tmp/librdkafka && \
+    ./configure --enable-static && \
+    make libs && \
+    make install
+
+#################################################################################
+### Flowgger build & install
+RUN set -x && \
+    cd /tmp && \
+    git clone https://github.com/cdumay/flowgger && \
     cd flowgger && \
-    cargo build --release --features='coroutines ecdh kafka' && \
+    cargo build --release --features='coroutines kafka' && \
     mkdir -p /opt/flowgger/etc /opt/flowgger/bin && \
     strip target/release/flowgger && \
-    mv target/release/flowgger /opt/flowgger/bin/ && \
-    rm -fr /tmp/flowgger
+    mv target/release/flowgger /opt/flowgger/bin/
 
-COPY flowgger.sh /etc/service/flowgger/run
+################################################################################
+## cleaning
+RUN apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /opt/libressl/share/man
+
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib \
+    RUST_LOG=trace
 
 EXPOSE 6514
-
-ENTRYPOINT ["/sbin/my_init"]
+ENTRYPOINT ["/opt/flowgger/bin/flowgger"]

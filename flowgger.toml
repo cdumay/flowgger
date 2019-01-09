@@ -30,7 +30,6 @@ X-OVH-INPUT = "gelf-clear"
 
 [output.librdkafka]
 "bootstrap.servers" = "kafka-1.alpha.thot.ovh.com:9094,kafka-2.alpha.thot.ovh.com:9094"
-"produce.offset.report" = "true"
 "message.timeout.ms" = "30000"
 "request.required.acks" = "0"
 "compression.codec" = "zstd"
