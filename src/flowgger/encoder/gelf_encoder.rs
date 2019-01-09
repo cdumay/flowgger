@@ -7,6 +7,7 @@ use serde_json::value::Value;
 
 #[derive(Clone)]
 pub struct GelfEncoder {
+    default_message: String,
     extra: Vec<(String, String)>,
 }
 
@@ -27,7 +28,13 @@ impl GelfEncoder {
                     )
                 }).collect(),
         };
-        GelfEncoder { extra: extra }
+        let default_message = match config.lookup("output.gelf_default_message") {
+            None => "-".to_string(),
+            Some(setting) => setting
+                .as_str().expect("output.gelf_default_message must be a string")
+                .to_owned()
+        };
+        GelfEncoder { default_message, extra }
     }
 }
 
@@ -37,15 +44,13 @@ impl Encoder for GelfEncoder {
             .insert("version".to_owned(), Value::String("1.1".to_owned()))
             .insert(
                 "host".to_owned(),
-                Value::String(if record.hostname.is_empty() {
-                    "unknown".to_owned()
-                } else {
-                    record.hostname
-                }),
-            ).insert(
+                Value::String(if record.hostname.is_empty() { "unknown".to_owned() } else { record.hostname }),
+            )
+            .insert(
                 "short_message".to_owned(),
-                Value::String(record.msg.unwrap_or_else(|| "-".to_owned())),
-            ).insert("timestamp".to_owned(), Value::F64(record.ts));
+                Value::String(record.msg.unwrap_or(self.default_message.to_owned())),
+            )
+            .insert("timestamp".to_owned(), Value::F64(record.ts));
         if let Some(severity) = record.severity {
             map = map.insert("level".to_owned(), Value::U64(u64::from(severity)));
         }

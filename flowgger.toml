@@ -18,18 +18,19 @@ tcp_threads = 2
 
 ### Kafka output
 type = "kafka"
-topic = "alpha.log1"
+topic = "myTopic"
 threads = 5
 
 ### Output format and parameters
 ### JSON (GELF)
 format = "gelf"
+# gelf_default_message = "-"
 
 [output.gelf_extra]
 X-OVH-INPUT = "gelf-clear"
 
 [output.librdkafka]
-"bootstrap.servers" = "kafka-1.alpha.thot.ovh.com:9094,kafka-2.alpha.thot.ovh.com:9094"
+"bootstrap.servers" = "kafka.example.com:9094"
 "message.timeout.ms" = "30000"
 "request.required.acks" = "0"
 "compression.codec" = "zstd"
