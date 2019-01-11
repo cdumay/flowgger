@@ -22,9 +22,7 @@ ENV BUILD_DEPS \
     libc-dev \
     libc6-dev \
     liblzma-dev \
-    libsasl2-dev \
     libsnappy-dev \
-    libssl-dev \
     libtool \
     make \
     patch \
@@ -34,6 +32,26 @@ ENV BUILD_DEPS \
 RUN set -eux; \
     apt-get update -qq; \
     apt-get install -qq ${BUILD_DEPS} --no-install-recommends
+
+################################################################################
+## LibreSSL install
+ENV LIBRESSL_VERSION 2.7.5
+ENV LIBRESSL_DOWNLOAD_URL https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-${LIBRESSL_VERSION}.tar.gz
+
+RUN set -x && \
+    mkdir -p /tmp/src && \
+    cd /tmp/src && \
+    curl -sSL $LIBRESSL_DOWNLOAD_URL -o libressl.tar.gz && \
+    tar xzf libressl.tar.gz && \
+    rm -f libressl.tar.gz && \
+    cd libressl-${LIBRESSL_VERSION} && \
+    ./configure --disable-shared --with-pic --disable-dependency-tracking --prefix=/opt/libressl && \
+    make check && make install && \
+    rm -fr /opt/libressl/share/man && \
+    echo /opt/libressl/lib > /etc/ld.so.conf.d/libressl.conf && ldconfig
+
+ENV OPENSSL_LIB_DIR=/opt/libressl/lib
+ENV OPENSSL_INCLUDE_DIR=/opt/libressl/include
 
 ################################################################################
 ## RUST install
@@ -59,7 +77,7 @@ RUN set -x && \
 
 ################################################################################
 ## ZSTD static & fPIC
-ENV ZSTD_VERSION=1.3.7
+ENV ZSTD_VERSION=1.3.8
 RUN set -x && \
     cd /tmp && \
     curl -sSL "https://github.com/facebook/zstd/archive/v${ZSTD_VERSION}.tar.gz" | tar xz && \
