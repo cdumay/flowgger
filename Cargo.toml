@@ -42,7 +42,8 @@ features = ["ssl", "sasl", "dynamic_linking"]
 optional = true
 
 [dependencies.openssl]
-version = "~0.9"
+version = "0.10"
+features = ["vendored"]
 
 [profile.release]
 opt-level = 3

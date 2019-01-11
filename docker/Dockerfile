@@ -34,24 +34,21 @@ RUN set -eux; \
     apt-get install -qq ${BUILD_DEPS} --no-install-recommends
 
 ################################################################################
-## LibreSSL install
-ENV LIBRESSL_VERSION 2.7.5
-ENV LIBRESSL_DOWNLOAD_URL https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-${LIBRESSL_VERSION}.tar.gz
+## OpenSSL install
+ENV OPENSSL_VERSION 1.1.1a
+ENV OPENSSL_URL https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
 
 RUN set -x && \
     mkdir -p /tmp/src && \
     cd /tmp/src && \
-    curl -sSL $LIBRESSL_DOWNLOAD_URL -o libressl.tar.gz && \
-    tar xzf libressl.tar.gz && \
-    rm -f libressl.tar.gz && \
-    cd libressl-${LIBRESSL_VERSION} && \
-    ./configure --disable-shared --with-pic --disable-dependency-tracking --prefix=/opt/libressl && \
-    make check && make install && \
-    rm -fr /opt/libressl/share/man && \
-    echo /opt/libressl/lib > /etc/ld.so.conf.d/libressl.conf && ldconfig
-
-ENV OPENSSL_LIB_DIR=/opt/libressl/lib
-ENV OPENSSL_INCLUDE_DIR=/opt/libressl/include
+    curl -sSL ${OPENSSL_URL} -o openssl.tar.gz && \
+    tar xzf openssl.tar.gz && \
+    rm -f openssl.tar.gz && \
+    cd openssl-${OPENSSL_VERSION} && \
+    ./config --prefix=/opt/openssl && \
+    make && make install && \
+    rm -fr /opt/openssl/share/man && \
+    echo /opt/openssl/lib > /etc/ld.so.conf.d/openssl.conf && ldconfig
 
 ################################################################################
 ## RUST install
