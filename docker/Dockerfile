@@ -135,7 +135,7 @@ RUN set -x && \
 ################################################################################
 ## cleaning
 RUN apt-get clean; \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /opt/libressl/share/man
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 EXPOSE 6514
 ENTRYPOINT ["/opt/flowgger/bin/flowgger"]
