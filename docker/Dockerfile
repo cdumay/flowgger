@@ -96,8 +96,7 @@ RUN set -x && \
     cd openssl-${OPENSSL_VERSION} && \
     ./config && \
     CFLAGS="-O3 -fPIC" make && \
-    make install_sw && \
-    rm -fr /usr/local/share/doc/openssl
+    make install_sw
 
 ################################################################################
 ## RUST install
