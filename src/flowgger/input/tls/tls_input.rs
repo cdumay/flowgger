@@ -42,9 +42,13 @@ impl Input for TlsInput {
                 let tx = tx.clone();
                 let (decoder, encoder) = (decoder.clone_boxed(), encoder.clone_boxed());
                 let tls_config = self.tls_config.clone();
-                thread::spawn(move || {
+                let thread_name = match client.peer_addr() {
+                    Ok(peer_addr) => format!("tls-input-{}", peer_addr),
+                    Err(_) => String::from("tls_input"),
+                };
+                thread::Builder::new().name(thread_name).spawn(move || {
                     handle_client(client, tx, decoder, encoder, tls_config);
-                });
+                }).unwrap();
             }
         }
     }

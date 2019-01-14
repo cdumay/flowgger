@@ -3,7 +3,7 @@ cargo-features = ["edition"]
 [package]
 edition = "2018"
 name = "flowgger"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Frank Denis <github@pureftpd.org>", "Cedric Dumay <cedric.dumay@gmail.com>"]
 build = "build.rs"
 

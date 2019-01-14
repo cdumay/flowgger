@@ -42,9 +42,13 @@ impl Input for TcpInput {
                 let tx = tx.clone();
                 let tcp_config = self.tcp_config.clone();
                 let (decoder, encoder) = (decoder.clone_boxed(), encoder.clone_boxed());
-                thread::spawn(move || {
+                let thread_name = match client.peer_addr() {
+                    Ok(peer_addr) => format!("tcp-input-{}", peer_addr),
+                    Err(_) => String::from("tcp-input"),
+                };
+                thread::Builder::new().name(thread_name).spawn(move || {
                     handle_client(client, tx, decoder, encoder, tcp_config);
-                });
+                }).unwrap();
             }
         }
     }

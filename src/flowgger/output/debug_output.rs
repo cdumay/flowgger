@@ -20,7 +20,7 @@ impl Output for DebugOutput {
             Some(merger) => Some(merger.clone_boxed()),
             None => None,
         };
-        thread::spawn(move || loop {
+        thread::Builder::new().name(String::from("debug-output")).spawn(move || loop {
             let mut bytes = match { arx.lock().unwrap().recv() } {
                 Ok(line) => line,
                 Err(_) => return,
@@ -31,6 +31,6 @@ impl Output for DebugOutput {
             let out = String::from_utf8_lossy(&bytes);
             print!("{}", out);
             let _ = stdout().flush();
-        });
+        }).unwrap();
     }
 }

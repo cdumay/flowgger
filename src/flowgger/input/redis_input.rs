@@ -134,13 +134,13 @@ impl Input for RedisInput {
             let config = self.config.clone();
             let (encoder, decoder) = (encoder.clone_boxed(), decoder.clone_boxed());
             let tx = tx.clone();
-            jids.push(thread::spawn(move || {
+            jids.push(thread::Builder::new().name(format!("redis-{}",tid)).spawn(move || {
                 let worker = RedisWorker::new(tid, config, tx, decoder, encoder);
                 if let Err(e) = worker.run() {
                     error!("Redis connection lost, aborting - {}", e);
                 }
                 exit(1);
-            }));
+            }).unwrap());
         }
         for jid in jids {
             if jid.join().is_err() {
